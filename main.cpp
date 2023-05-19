@@ -12,14 +12,25 @@
 #include "ODE_stepper.hpp"
 #include "function.hpp"
 
+enum variable : size_t { x, xdot, y, ydot };
+
+constexpr size_t ind(variable var) {
+    return static_cast<size_t>(var);
+}
+
 int main()
 {
+    std::cout << x << std::endl;
+    std::cout << xdot << std::endl;
+    std::cout << y << std::endl;
+    std::cout << ydot << std::endl;
+
     State<4> state = {1.0, 2.0, 3.0, 4.0};
 
-    std::shared_ptr<Function<4>> f1 = std::make_shared<CircularAcceleration<0, 1, 4>>(1.0);
-    std::shared_ptr<Function<4>> f2 = std::make_shared<CircularAcceleration<2, 3, 4>>(2.0);
+    std::shared_ptr<Derivative<4>> f1 = std::make_shared<CircularAcceleration<x, xdot, 4>>(1.0);
+    std::shared_ptr<Derivative<4>> f2 = std::make_shared<CircularAcceleration<y, ydot, 4>>(2.0);
 
-    CompositeFunction<4> dfunc;
+    CompositeDerivative<4> dfunc;
     dfunc.add_function(f1);
     dfunc.add_function(f2);
 

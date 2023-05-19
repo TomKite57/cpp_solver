@@ -11,15 +11,15 @@
 #include "stddef.h"
 
 template<size_t N>
-class Function
+class Derivative
 {
 public:
-    Function() = default;
-    Function(const Function& d) = default;
-    Function(Function&& d) = default;
-    Function& operator=(const Function& d) = default;
-    Function& operator=(Function&& d) = default;
-    virtual ~Function() = default;
+    Derivative() = default;
+    Derivative(const Derivative& d) = default;
+    Derivative(Derivative&& d) = default;
+    Derivative& operator=(const Derivative& d) = default;
+    Derivative& operator=(Derivative&& d) = default;
+    virtual ~Derivative() = default;
 
     State<N> operator()(const State<N>& state) const
     {
@@ -31,22 +31,20 @@ public:
 
 
 template<size_t N>
-class CompositeFunction : public Function<N>
+class CompositeDerivative : public Derivative<N>
 {
 private:
-    std::vector<std::shared_ptr<Function<N>>> _functions;
+    std::vector<std::shared_ptr<Derivative<N>>> _functions;
 
 public:
-    CompositeFunction() = default;
-    CompositeFunction(const CompositeFunction& d): _functions(d._functions) {};
-    CompositeFunction(CompositeFunction&& d): _functions(std::move(d._functions)) {};
-    CompositeFunction& operator=(const CompositeFunction& d) { _functions = d._functions; return *this;}
-    CompositeFunction& operator=(CompositeFunction&& d) { _functions = std::move(d._functions); return *this; };
-    virtual ~CompositeFunction() = default;
+    CompositeDerivative() = default;
+    CompositeDerivative(const CompositeDerivative& d): _functions(d._functions) {};
+    CompositeDerivative(CompositeDerivative&& d): _functions(std::move(d._functions)) {};
+    CompositeDerivative& operator=(const CompositeDerivative& d) { _functions = d._functions; return *this;}
+    CompositeDerivative& operator=(CompositeDerivative&& d) { _functions = std::move(d._functions); return *this; };
+    virtual ~CompositeDerivative() = default;
 
-    //CompositeFunction(std::initializer_list<std::unique_ptr<Function<N>>> functions): _functions{functions} {}
-
-    void add_function(std::shared_ptr<Function<N>> function)
+    void add_function(std::shared_ptr<Derivative<N>> function)
     {
         _functions.push_back(function);
     }
@@ -55,9 +53,9 @@ public:
     {
         State<N> result = State<N>(0.0, N);
 
-        for (size_t i = 0; i < _functions.size(); ++i)
+        for (const auto& f : _functions)
         {
-            result += (*_functions[i])(state);
+            result += (*f)(state);
         }
 
         return result;
@@ -66,15 +64,15 @@ public:
 
 
 template<size_t x_ind, size_t dx_ind, size_t N>
-class CircularAcceleration : public Function<N>
+class CircularAcceleration : public Derivative<N>
 {
 public:
-    double _omega2;
+    const double _omega2;
     static constexpr size_t _x_ind = x_ind;
     static constexpr size_t _dx_ind = dx_ind;
 
 public:
-    CircularAcceleration(double omega2) : _omega2(omega2) {}
+    CircularAcceleration(double omega2) : _omega2{omega2} {}
 
     CircularAcceleration(const CircularAcceleration& d): _omega2(d._omega2) {}
     CircularAcceleration(CircularAcceleration&& d): _omega2(d._omega2) {}
@@ -84,12 +82,12 @@ public:
 
     State<N> call(const State<N>& state) const override
     {
-        assert(state.size() > x_ind);
-        assert(state.size() > dx_ind);
+        assert(state.size() > _x_ind);
+        assert(state.size() > _dx_ind);
 
         State<N> dstate(0.0, N);
-        dstate[x_ind] = state[dx_ind];
-        dstate[dx_ind] = -_omega2*state[x_ind];
+        dstate[_x_ind] = state[_dx_ind];
+        dstate[_dx_ind] = -_omega2*state[_x_ind];
         return dstate;
     }
 };
