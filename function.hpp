@@ -10,6 +10,9 @@
 #include <iostream>
 #include "stddef.h"
 
+// ================================================================================================= //
+// ===================================== Derivative functions ====================================== //
+// ================================================================================================= //
 template<size_t N>
 class Derivative
 {
@@ -20,6 +23,8 @@ public:
     Derivative& operator=(const Derivative& d) = default;
     Derivative& operator=(Derivative&& d) = default;
     virtual ~Derivative() = default;
+
+    virtual void add_function(std::unique_ptr<Derivative<N>>&& function) { throw std::runtime_error("Class Not Composite"); }
 
     State<N> operator()(const State<N>& state) const
     {
@@ -38,15 +43,47 @@ private:
 
 public:
     CompositeDerivative() = default;
-    CompositeDerivative(const CompositeDerivative& d): _functions(d._functions) {};
-    CompositeDerivative(CompositeDerivative&& d): _functions(std::move(d._functions)) {};
-    CompositeDerivative& operator=(const CompositeDerivative& d) { _functions = d._functions; return *this;}
-    CompositeDerivative& operator=(CompositeDerivative&& d) { _functions = std::move(d._functions); return *this; };
+    CompositeDerivative(const CompositeDerivative& d) = default;
+    CompositeDerivative(CompositeDerivative&& d) = default;
+    CompositeDerivative& operator=(const CompositeDerivative& d) = default;
+    CompositeDerivative& operator=(CompositeDerivative&& d) = default;
     virtual ~CompositeDerivative() = default;
 
     void add_function(std::shared_ptr<Derivative<N>> function)
     {
         _functions.push_back(function);
+    }
+
+    virtual State<N> call(const State<N>& state) const override
+    {
+        State<N> result = State<N>(0.0, N);
+
+        for (const auto& f : _functions)
+        {
+            result += (*f)(state);
+        }
+
+        return result;
+    }
+};
+
+template<size_t N>
+class CompositeDerivative_2 : public Derivative<N>
+{
+private:
+    std::vector<std::unique_ptr<Derivative<N>>> _functions;
+
+public:
+    CompositeDerivative_2() = default;
+    CompositeDerivative_2(const CompositeDerivative_2& d) = default;
+    CompositeDerivative_2(CompositeDerivative_2&& d) = default;
+    CompositeDerivative_2& operator=(const CompositeDerivative_2& d) = default;
+    CompositeDerivative_2& operator=(CompositeDerivative_2&& d) = default;
+    virtual ~CompositeDerivative_2() = default;
+
+    void add_function(std::unique_ptr<Derivative<N>>&& function) override
+    {
+        _functions.push_back(std::move(function));
     }
 
     virtual State<N> call(const State<N>& state) const override
@@ -91,5 +128,47 @@ public:
         return dstate;
     }
 };
+
+
+// ================================================================================================= //
+// ====================================== Algebraic Functions ====================================== //
+// ================================================================================================= //
+template<size_t N>
+class Algebraic
+{
+public:
+    Algebraic() = default;
+    Algebraic(const Algebraic& d) = default;
+    Algebraic(Algebraic&& d) = default;
+    Algebraic& operator=(const Algebraic& d) = default;
+    Algebraic& operator=(Algebraic&& d) = default;
+    virtual ~Algebraic() = default;
+
+    void operator()(State<N>& state, const double& dt) const
+    {
+        return call(state, dt);
+    }
+
+    virtual void call(State<N>& state, const double& dt) const = 0;
+};
+
+template<size_t ind, size_t N>
+class Incrementor : public Algebraic<N>
+{
+public:
+    Incrementor() = default;
+    Incrementor(const Incrementor& d) = default;
+    Incrementor(Incrementor&& d) = default;
+    Incrementor& operator=(const Incrementor& d) = default;
+    Incrementor& operator=(Incrementor&& d) = default;
+    virtual ~Incrementor() = default;
+
+    void call(State<N>& state, const double& dt) const override
+    {
+        state[ind] += dt;
+    }
+};
+
+
 
 #endif // FUNCTION_HPP
