@@ -5,10 +5,10 @@
 #include <iostream>
 #include <string>
 
-template<typename T>
-std::ostream& operator<<(std::ostream& os, const std::valarray<T>& v)
+template<typename T, size_t N>
+std::ostream& operator<<(std::ostream& os, const std::array<T, N>& v)
 {
-    os << "valarray(";
+    os << "array(";
     for (const auto& x : v)
     {
         os << x;
@@ -19,10 +19,10 @@ std::ostream& operator<<(std::ostream& os, const std::valarray<T>& v)
     return os;
 }
 
-template<typename T>
-std::ostream& operator<<(std::ostream& os, std::valarray<T>&& v)
+template<typename T, size_t N>
+std::ostream& operator<<(std::ostream& os, std::array<T, N>&& v)
 {
-    os << "valarray(";
+    os << "array(";
     for (const auto& x : v)
     {
         os << x;

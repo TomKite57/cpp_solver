@@ -18,6 +18,21 @@ public:
         return state*scalar;
     }
 
+    friend std::ostream& operator<<(std::ostream& os, const State<N>& state)
+    {
+        os << "State(";
+        for (size_t i = 0; i < N; ++i)
+        {
+            os << state[i];
+            if (i < N-1)
+            {
+                os << ", ";
+            }
+        }
+        os << ")";
+        return os;
+    }
+
     // Constructor that initializes all elements of the array to the given value
     State(double initial_value) : _data{ }
     {
