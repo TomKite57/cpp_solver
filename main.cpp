@@ -23,7 +23,7 @@ int main()
     auto f1 = std::make_unique<CircularAcceleration<x, xdot, N>>(1.0);
     auto f2 = std::make_unique<CircularAcceleration<y, ydot, N>>(2.0);
 
-    auto dfunc = std::make_unique<CompositeDerivative_2<N>>();
+    auto dfunc = std::make_unique<CompositeDerivative<N>>();
     dfunc->add_function(std::move(f1));
     dfunc->add_function(std::move(f2));
 

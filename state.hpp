@@ -7,12 +7,14 @@
 #include <iostream>
 #include "stddef.h"
 
-template<size_t NN>
+
+// ================================================================================================= //
+// ========================================== State Class ========================================== //
+// ================================================================================================= //
+template<size_t N>
 class State
 {
 public:
-    static constexpr size_t N = NN;
-
     friend State<N> operator*(double scalar, const State<N>& state)
     {
         return state*scalar;

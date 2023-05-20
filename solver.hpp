@@ -26,11 +26,10 @@ template <size_t N>
 class DynamicSolver : public Solver<N>
 {
 private:
-    //std::unique_ptr<Derivative<N>> _derivative;
+    std::unique_ptr<ODE_stepper<N>> _stepper;
     std::unique_ptr<Algebraic<N>> _prestep{nullptr};
     std::unique_ptr<Algebraic<N>> _poststep{nullptr};
 
-    std::unique_ptr<ODE_stepper<N>> _stepper;
 
 public:
     DynamicSolver() = delete;

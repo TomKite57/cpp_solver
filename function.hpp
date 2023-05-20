@@ -34,12 +34,11 @@ public:
     virtual State<N> call(const State<N>& state) const = 0;
 };
 
-
 template<size_t N>
 class CompositeDerivative : public Derivative<N>
 {
 private:
-    std::vector<std::shared_ptr<Derivative<N>>> _functions;
+    std::vector<std::unique_ptr<Derivative<N>>> _functions;
 
 public:
     CompositeDerivative() = default;
@@ -48,38 +47,6 @@ public:
     CompositeDerivative& operator=(const CompositeDerivative& d) = default;
     CompositeDerivative& operator=(CompositeDerivative&& d) = default;
     virtual ~CompositeDerivative() = default;
-
-    void add_function(std::shared_ptr<Derivative<N>> function)
-    {
-        _functions.push_back(function);
-    }
-
-    virtual State<N> call(const State<N>& state) const override
-    {
-        State<N> result = State<N>(0.0, N);
-
-        for (const auto& f : _functions)
-        {
-            result += (*f)(state);
-        }
-
-        return result;
-    }
-};
-
-template<size_t N>
-class CompositeDerivative_2 : public Derivative<N>
-{
-private:
-    std::vector<std::unique_ptr<Derivative<N>>> _functions;
-
-public:
-    CompositeDerivative_2() = default;
-    CompositeDerivative_2(const CompositeDerivative_2& d) = default;
-    CompositeDerivative_2(CompositeDerivative_2&& d) = default;
-    CompositeDerivative_2& operator=(const CompositeDerivative_2& d) = default;
-    CompositeDerivative_2& operator=(CompositeDerivative_2&& d) = default;
-    virtual ~CompositeDerivative_2() = default;
 
     void add_function(std::unique_ptr<Derivative<N>>&& function) override
     {
