@@ -41,19 +41,13 @@ public:
         _data.fill(initial_value);
     }
 
-    State(double initial_value, size_t size) : _data{ }
-    {
-        assert(size == N);
-        _data.fill(initial_value);
-    }
-
     // Constructor that initializes the array with the given values
-    State(std::initializer_list<double> values) : _data{ }
+    State(const std::initializer_list<double>& values) : _data{ }
     {
         assert(values.size() == N);
 
         size_t i = 0;
-        for (auto value : values)
+        for (const auto& value : values)
         {
             _data[i] = value;
             ++i;
@@ -125,7 +119,7 @@ public:
         {
             result._data[i] = _data[i] / other._data[i];
         }
-    return result;
+        return result;
     }
 
     // Scalar division operator
@@ -147,11 +141,48 @@ public:
         }
     }
 
-    // Accessor functions
-    size_t size() const
+    void operator-=(const State<N>& other)
     {
-        return N;
+        for (size_t i = 0; i < N; ++i)
+        {
+            _data[i] -= other._data[i];
+        }
     }
+
+    void operator*=(const State<N>& other)
+    {
+        for (size_t i = 0; i < N; ++i)
+        {
+            _data[i] *= other._data[i];
+        }
+    }
+
+    void operator*=(double scalar)
+    {
+        for (size_t i = 0; i < N; ++i)
+        {
+            _data[i] *= scalar;
+        }
+    }
+
+    void operator/=(const State<N>& other)
+    {
+        for (size_t i = 0; i < N; ++i)
+        {
+            _data[i] /= other._data[i];
+        }
+    }
+
+    void operator/=(double scalar)
+    {
+        for (size_t i = 0; i < N; ++i)
+        {
+            _data[i] /= scalar;
+        }
+    }
+
+    // Accessor functions
+    static constexpr size_t size() { return N; }
 
 private:
     std::array<double, N> _data;

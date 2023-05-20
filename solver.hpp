@@ -86,7 +86,40 @@ public:
         if (_ODE_stepper) (*_ODE_stepper)(state, dt);
         if (_poststep) (*_poststep)(state, dt);
     }
+};
 
+// ================================================================================================= //
+// ========================================= Const solver ========================================== //
+// ================================================================================================= //
+
+template <size_t N>
+class ConstSolver : public Solver<N>
+{
+private:
+    const std::shared_ptr<const ODE_stepper<N>> _ODE_stepper;
+    const std::shared_ptr<const Algebraic<N>> _prestep;
+    const std::shared_ptr<const Algebraic<N>> _poststep;
+
+public:
+    template <typename ODE, typename PRE, typename POST>
+    requires std::is_base_of_v<ODE_stepper<N>, ODE> && std::is_base_of_v<Algebraic<N>, PRE> && std::is_base_of_v<Algebraic<N>, POST>
+    ConstSolver(const ODE& ode, const PRE& pre, const POST& post):
+    _ODE_stepper{std::make_shared<const ODE>(ode)}, _prestep{std::make_shared<const PRE>(pre)}, _poststep{std::make_shared<const POST>(post)}
+    {}
+
+
+    ConstSolver(const ConstSolver& d) = default;
+    ConstSolver(ConstSolver&& d) = default;
+    ConstSolver& operator=(const ConstSolver& d) = default;
+    ConstSolver& operator=(ConstSolver&& d) = default;
+    virtual ~ConstSolver() = default;
+
+    virtual void step(State<N>& state, const double& dt) const override
+    {
+        (*_prestep)(state, dt);
+        (*_ODE_stepper)(state, dt);
+        (*_poststep)(state, dt);
+    }
 };
 
 #endif // SOLVER_HPP
