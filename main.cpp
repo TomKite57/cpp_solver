@@ -20,21 +20,20 @@ int main()
     constexpr size_t N = 5;
     State<N> state = {1.0, 2.0, 3.0, 4.0, 0.0};
 
-    auto f1 = std::make_unique<CircularAcceleration<x, xdot, N>>(1.0);
-    auto f2 = std::make_unique<CircularAcceleration<y, ydot, N>>(2.0);
+    auto f1 = CircularAcceleration<y, ydot, N>(2.0);
+    auto f2 = CircularAcceleration<x, xdot, N>(1.0);
 
-    auto dfunc = std::make_unique<CompositeDerivative<N>>();
-    dfunc->add_function(std::move(f1));
-    dfunc->add_function(std::move(f2));
+    CompositeDerivative<N> dfunc{};
+    dfunc.add_function(f1);
+    dfunc.add_function(f2);
 
-    //RK4_stepper<N> stepper{std::move(dfunc)};
-    std::unique_ptr<ODE_stepper<N>> stepper = std::make_unique<RK4_stepper<N>>(std::move(dfunc));
+    RK4_stepper<N> stepper{dfunc};
 
     // Time loop
     auto start = std::chrono::high_resolution_clock::now();
     for (size_t i = 0; i < 5'000'000; ++i)
     {
-        (*stepper)(state, 0.1);
+        stepper(state, 0.1);
     }
     auto end = std::chrono::high_resolution_clock::now();
     auto time_span = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
@@ -44,8 +43,9 @@ int main()
 
 
     state = {1.0, 2.0, 3.0, 4.0, 0.0};
-    DynamicSolver<N> solver{std::move(stepper)};
-    solver.set_poststep( std::make_unique<Incrementor<N-1, N>>());
+    DynamicSolver<N> solver;
+    solver.set_poststep( Incrementor<N-1, N>{});
+    solver.set_ODE_step(stepper);
     // Time loop
     start = std::chrono::high_resolution_clock::now();
     for (size_t i = 0; i < 5'000'000; ++i)

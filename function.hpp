@@ -24,7 +24,7 @@ public:
     Derivative& operator=(Derivative&& d) = default;
     virtual ~Derivative() = default;
 
-    virtual void add_function(std::unique_ptr<Derivative<N>>&& function) { throw std::runtime_error("Class Not Composite"); }
+    //virtual void add_function(const std::shared_ptr<Derivative<N>>& function) { throw std::runtime_error("Class Not Composite"); }
 
     State<N> operator()(const State<N>& state) const
     {
@@ -38,7 +38,7 @@ template<size_t N>
 class CompositeDerivative : public Derivative<N>
 {
 private:
-    std::vector<std::unique_ptr<Derivative<N>>> _functions;
+    std::vector<std::shared_ptr<Derivative<N>>> _functions;
 
 public:
     CompositeDerivative() = default;
@@ -48,9 +48,23 @@ public:
     CompositeDerivative& operator=(CompositeDerivative&& d) = default;
     virtual ~CompositeDerivative() = default;
 
-    void add_function(std::unique_ptr<Derivative<N>>&& function) override
+    void add_function(const std::shared_ptr<Derivative<N>>& function)
     {
-        _functions.push_back(std::move(function));
+        _functions.push_back(function);
+    }
+
+    template <typename V>
+    requires std::is_base_of_v<Derivative<N>, V>
+    void add_function(const V& dfunc)
+    {
+        _functions.push_back(std::make_unique<V>(dfunc));
+    }
+
+    template <typename V>
+    requires std::is_base_of_v<Derivative<N>, V>
+    void add_function(V&& dfunc)
+    {
+        _functions.push_back(std::make_unique<V>(std::move(dfunc)));
     }
 
     virtual State<N> call(const State<N>& state) const override
