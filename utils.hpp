@@ -63,4 +63,15 @@ std::vector<T> operator*(const std::vector<T>& v1, const std::vector<T>& v2)
     return v;
 }
 
+
+template<typename F, typename... Args>
+double time_function(F&& f, Args&&... args, size_t repeats=1)
+{
+    auto start = std::chrono::high_resolution_clock::now();
+    for (size_t i=0; i<repeats; ++i)
+        std::invoke(std::forward<F>(f), std::forward<Args>(args)...);
+    auto end = std::chrono::high_resolution_clock::now();
+    return std::chrono::duration<double>(end - start).count();
+}
+
 # endif // UTILS_HPP
