@@ -20,14 +20,11 @@ int main()
     constexpr size_t N = 5;
     State<N> state = {1.0, 2.0, 3.0, 4.0, 0.0};
 
-    auto f1 = CircularAcceleration<y, ydot, N>(2.0);
-    auto f2 = CircularAcceleration<x, xdot, N>(1.0);
-
-    CompositeDerivative<N> dfunc{};
-    dfunc.add_function(f1);
-    dfunc.add_function(f2);
-
-    RK4_stepper<N> stepper{dfunc};
+    RK4_stepper<N> stepper
+    {
+        [](const State<N>& s){ State<N> ds(0.0); ds[x] = s[xdot]; ds[xdot] = -s[x]; return ds; },
+        [](const State<N>& s){ State<N> ds(0.0); ds[y] = s[ydot]; ds[ydot] = -2.0*s[y]; return ds; }
+    };
 
     // Time loop
     auto start = std::chrono::high_resolution_clock::now();

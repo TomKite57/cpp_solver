@@ -57,14 +57,12 @@ public:
     const double& operator[](size_t index) const
     {
         assert(index < N);
-        assert(index >= 0);
         return _data[index];
     }
 
     double& operator[](size_t index)
     {
         assert(index < N);
-        assert(index >= 0);
         return _data[index];
     }
 

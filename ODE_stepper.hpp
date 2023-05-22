@@ -17,6 +17,13 @@ template<size_t N>
 class ODE_stepper
 {
 public:
+    ODE_stepper() = default;
+    ODE_stepper(const ODE_stepper& d) = default;
+    ODE_stepper(ODE_stepper&& d) = default;
+    ODE_stepper& operator=(const ODE_stepper& d) = default;
+    ODE_stepper& operator=(ODE_stepper&& d) = default;
+    virtual ~ODE_stepper() = default;
+
     void operator()(State<N>& state, const double& dt) const
     {
         step(state, dt);
@@ -36,6 +43,10 @@ private:
     std::shared_ptr<Derivative<N>> _dfunc;
 public:
     Euler_stepper(const std::shared_ptr<Derivative<N>>& dfunc) : _dfunc{dfunc} {}
+
+    template <typename... VS>
+    requires std::is_constructible_v<CompositeDerivative<N>, VS...>
+    Euler_stepper(VS&&... dfuncs) : _dfunc{std::make_shared<CompositeDerivative<N>>(std::forward<VS>(dfuncs)...)} {}
 
     template <typename V>
     requires std::is_base_of_v<Derivative<N>, V>
@@ -67,6 +78,14 @@ private:
 
 public:
     RK4_stepper(const std::shared_ptr<Derivative<N>>& dfunc) : _dfunc{dfunc} {}
+
+    template <typename... VS>
+    requires std::is_constructible_v<CompositeDerivative<N>, VS...>
+    RK4_stepper(VS&&... dfuncs) : _dfunc{std::make_shared<CompositeDerivative<N>>(std::forward<VS>(dfuncs)...)} {}
+
+    template <typename V>
+    requires std::is_constructible_v<WrappedDerivative<N>, V> && (!std::is_base_of_v<Derivative<N>, V>)
+    RK4_stepper(const V& dfunc) : _dfunc{std::make_shared<WrappedDerivative<N>>(dfunc)} {}
 
     template <typename V>
     requires std::is_base_of_v<Derivative<N>, V>

@@ -29,62 +29,26 @@ public:
     virtual State<N> call(const State<N>& state) const = 0;
 };
 
+
 template<size_t N>
-class CompositeDerivative : public Derivative<N>
+class WrappedDerivative : public Derivative<N>
 {
 private:
-    std::vector<std::shared_ptr<Derivative<N>>> _functions;
+    std::function<State<N>(const State<N>&)> _dfunc;
 
 public:
-    CompositeDerivative() = default;
-    CompositeDerivative(const CompositeDerivative& d) = default;
-    CompositeDerivative(CompositeDerivative&& d) = default;
-    CompositeDerivative& operator=(const CompositeDerivative& d) = default;
-    CompositeDerivative& operator=(CompositeDerivative&& d) = default;
-    virtual ~CompositeDerivative() = default;
+    WrappedDerivative() = default;
+    WrappedDerivative(const WrappedDerivative& d) = default;
+    WrappedDerivative(WrappedDerivative&& d) = default;
+    WrappedDerivative& operator=(const WrappedDerivative& d) = default;
+    WrappedDerivative& operator=(WrappedDerivative&& d) = default;
+    virtual ~WrappedDerivative() = default;
 
-    // Variadic constructor
-    template <typename V, typename... VS>
-    requires std::is_base_of_v<Derivative<N>, V>
-    CompositeDerivative(const V& dfunc, const VS&... dfuncs)
-    {
-        add_function(dfunc, dfuncs...);
-    }
+    WrappedDerivative(const std::function<State<N>(const State<N>&)>& dfunc) : _dfunc{dfunc} {}
 
-    // Base cases
-    void add_function(const std::shared_ptr<Derivative<N>>& function)
-    {
-        _functions.push_back(function);
-    }
+    void set_dfunc(const std::function<State<N>(const State<N>&)>& dfunc) { _dfunc = dfunc; }
 
-    void add_function() { return; }
-
-    // Recursive case
-    template <typename V, typename... Args>
-    requires std::is_base_of_v<Derivative<N>, V>
-    void add_function(const V& dfunc, Args&&... args)
-    {
-        _functions.push_back(std::make_shared<V>(dfunc));
-        add_function(std::forward<Args>(args)...);
-    }
-
-    template <typename V, typename... Args>
-    requires std::is_base_of_v<Derivative<N>, V>
-    void add_function(V&& dfunc, Args&&... args)
-    {
-        _functions.push_back(std::make_shared<V>(std::move(dfunc)));
-        add_function(std::forward<Args>(args)...);
-    }
-
-    virtual State<N> call(const State<N>& state) const override
-    {
-        State<N> result = State<N>(0.0);
-
-        for (const auto& f : _functions)
-            result += (*f)(state);
-
-        return result;
-    }
+    virtual State<N> call(const State<N>& state) const override { return _dfunc(state); }
 };
 
 
@@ -118,6 +82,71 @@ public:
 };
 
 
+template<size_t N>
+class CompositeDerivative : public Derivative<N>
+{
+private:
+    std::vector<std::shared_ptr<Derivative<N>>> _functions;
+
+    // add_function_helpers
+    template <typename V>
+    requires std::constructible_from<WrappedDerivative<N>, V> && (!std::is_base_of_v<Derivative<N>, V>)
+    void add_function_helper(const V& function)
+    {
+        _functions.push_back(std::make_shared<WrappedDerivative<N>>(function));
+    }
+
+    template <typename V>
+    requires std::is_base_of_v<Derivative<N>, V>
+    void add_function_helper(const V& function)
+    {
+        _functions.push_back(std::make_shared<V>(function));
+    }
+
+    void add_function_helper(const std::shared_ptr<Derivative<N>>& function)
+    {
+        _functions.push_back(function);
+    }
+
+    void add_function_helper() { return; }
+
+public:
+    CompositeDerivative() = default;
+    CompositeDerivative(const CompositeDerivative& d) = default;
+    CompositeDerivative(CompositeDerivative&& d) = default;
+    CompositeDerivative& operator=(const CompositeDerivative& d) = default;
+    CompositeDerivative& operator=(CompositeDerivative&& d) = default;
+    virtual ~CompositeDerivative() = default;
+
+    // Variadic constructor
+    template <typename V, typename... VS>
+    CompositeDerivative(const V& dfunc, const VS&... dfuncs): _functions{}
+    {
+        add_function(dfunc, dfuncs...);
+    }
+
+    // Variadic add_function
+    template <typename V, typename... Args>
+    void add_function(const V& dfunc, Args&&... args)
+    {
+        add_function_helper(dfunc);
+        add_function(std::forward<Args>(args)...);
+    }
+
+    // add_function base case
+    void add_function() { return; }
+
+    virtual State<N> call(const State<N>& state) const override
+    {
+        State<N> result = State<N>(0.0);
+
+        for (const auto& f : _functions)
+            result += (*f)(state);
+
+        return result;
+    }
+};
+
 // ================================================================================================= //
 // ====================================== Algebraic Functions ====================================== //
 // ================================================================================================= //
@@ -132,13 +161,33 @@ public:
     Algebraic& operator=(Algebraic&& d) = default;
     virtual ~Algebraic() = default;
 
-    void operator()(State<N>& state, const double& dt) const
-    {
-        return call(state, dt);
-    }
+    void operator()(State<N>& state, const double& dt) const { return call(state, dt); }
 
     virtual void call(State<N>& state, const double& dt) const = 0;
 };
+
+
+template<size_t N>
+class WrappedAlgebraic : public Algebraic<N>
+{
+private:
+    std::function<void(State<N>&, const double&)> _func;
+
+public:
+    WrappedAlgebraic() = default;
+    WrappedAlgebraic(const WrappedAlgebraic& d) = default;
+    WrappedAlgebraic(WrappedAlgebraic&& d) = default;
+    WrappedAlgebraic& operator=(const WrappedAlgebraic& d) = default;
+    WrappedAlgebraic& operator=(WrappedAlgebraic&& d) = default;
+    virtual ~WrappedAlgebraic() = default;
+
+    WrappedAlgebraic(const std::function<void(State<N>&, const double&)>& func) : _func{func} {}
+
+    void set_func(const std::function<void(State<N>&, const double&)>& func) { _func = func; }
+
+    virtual void call(State<N>& state, const double& dt) const override { _func(state, dt); }
+};
+
 
 template<size_t ind, size_t N>
 class Incrementor : public Algebraic<N>
@@ -156,6 +205,7 @@ public:
         state[ind] += dt;
     }
 };
+
 
 template<size_t ind, size_t N>
 class Decrementor : public Algebraic<N>
@@ -180,6 +230,28 @@ class CompositeAlgebraic : public Algebraic<N>
 private:
     std::vector<std::shared_ptr<Algebraic<N>>> _functions;
 
+    // add_function_helpers
+    template <typename V>
+    requires std::constructible_from<WrappedAlgebraic<N>, V> && (!std::is_base_of_v<Algebraic<N>, V>)
+    void add_function_helper(const V& function)
+    {
+        _functions.push_back(std::make_shared<WrappedAlgebraic<N>>(function));
+    }
+
+    template <typename V>
+    requires std::is_base_of_v<Algebraic<N>, V>
+    void add_function_helper(const V& function)
+    {
+        _functions.push_back(std::make_shared<V>(function));
+    }
+
+    void add_function_helper(const std::shared_ptr<Algebraic<N>>& function)
+    {
+        _functions.push_back(function);
+    }
+
+    void add_function_helper() { return; }
+
 public:
     CompositeAlgebraic() = default;
     CompositeAlgebraic(const CompositeAlgebraic& d) = default;
@@ -190,36 +262,21 @@ public:
 
     // Variadic constructor
     template <typename V, typename... VS>
-    requires std::is_base_of_v<Algebraic<N>, V>
-    CompositeAlgebraic(const V& dfunc, const VS&... dfuncs)
+    CompositeAlgebraic(const V& dfunc, const VS&... dfuncs): _functions{}
     {
         add_function(dfunc, dfuncs...);
     }
 
-    // Base case for adding functions
-    void add_function(const std::shared_ptr<Algebraic<N>>& function)
+    // Variadic add_function
+    template <typename V, typename... Args>
+    void add_function(const V& dfunc, Args&&... args)
     {
-        _functions.push_back(function);
+        add_function_helper(dfunc);
+        add_function(std::forward<Args>(args)...);
     }
 
+    // add_function base case
     void add_function() { return; }
-
-    // Recursive case for adding functions
-    template <typename V, typename... VS>
-    requires std::is_base_of_v<Algebraic<N>, V>
-    void add_function(const V& dfunc, VS&&... dfuncs)
-    {
-        _functions.push_back(std::make_shared<V>(dfunc));
-        add_function(std::forward<VS>(dfuncs)...);
-    }
-
-    template <typename V, typename... VS>
-    requires std::is_base_of_v<Algebraic<N>, V>
-    void add_function(V&& dfunc, VS&&... dfuncs)
-    {
-        _functions.push_back(std::make_shared<V>(std::move(dfunc)));
-        add_function(std::forward<VS>(dfuncs)...);
-    }
 
     virtual void call(State<N>& state, const double& dt) const override
     {
@@ -230,31 +287,10 @@ public:
     }
 };
 
-template<size_t ind, size_t N>
-class CircularPosition : public Algebraic<N>
-{
-public:
-    const double _omega;
-    static constexpr size_t _ind = ind;
 
-public:
-    CircularPosition(double omega) : _omega{omega} {}
-
-    CircularPosition(const CircularPosition& d): _omega(d._omega) {}
-    CircularPosition(CircularPosition&& d): _omega(d._omega) {}
-    CircularPosition& operator=(const CircularPosition& d){ _omega = d._omega; return *this; }
-    CircularPosition& operator=(CircularPosition&& d){ _omega = d._omega; return *this; }
-    virtual ~CircularPosition() {}
-
-    void call(State<N>& state, const double& dt) const override
-    {
-        static_assert(state.size() > _ind);
-
-        state[_ind] = std::fmod(state[_ind] + _omega*dt, 2.0*M_PI);
-    }
-};
-
-
+// ================================================================================================= //
+// ====================================== Do Nothing Function ====================================== //
+// ================================================================================================= //
 template<size_t N>
 class DoNothing : public Algebraic<N>, public Derivative<N>
 {
@@ -266,9 +302,9 @@ public:
     DoNothing& operator=(DoNothing&& d) = default;
     virtual ~DoNothing() = default;
 
-    void call(State<N>& state, const double& dt) const override { return; }
+    void call(State<N>&, const double&) const override { return; }
 
-    State<N> call(const State<N>& state) const override { return State<N>(0.0); }
+    State<N> call(const State<N>&) const override { return State<N>(0.0); }
 };
 
 #endif // FUNCTION_HPP

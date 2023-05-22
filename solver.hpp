@@ -15,6 +15,13 @@ template <size_t N>
 class Solver
 {
 public:
+    Solver() = default;
+    Solver(const Solver& s) = default;
+    Solver(Solver&& s) = default;
+    Solver& operator=(const Solver& s) = default;
+    Solver& operator=(Solver&& s) = default;
+    virtual ~Solver() = default;
+
     void operator()(State<N>& state, const double& dt) const
     {
         step(state, dt);
