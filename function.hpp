@@ -17,6 +17,9 @@ template<size_t N>
 class Derivative
 {
 public:
+    static constexpr size_t size() { return N; }
+    static constexpr size_t _N = N;
+
     Derivative() = default;
     Derivative(const Derivative& d) = default;
     Derivative(Derivative&& d) = default;
@@ -154,6 +157,9 @@ template<size_t N>
 class Algebraic
 {
 public:
+    static constexpr size_t size() { return N; }
+    static constexpr size_t _N = N;
+
     Algebraic() = default;
     Algebraic(const Algebraic& d) = default;
     Algebraic(Algebraic&& d) = default;
@@ -306,5 +312,34 @@ public:
 
     State<N> call(const State<N>&) const override { return State<N>(0.0); }
 };
+
+template<size_t N>
+class DoNothingAlgebraic : public Algebraic<N>
+{
+public:
+    DoNothingAlgebraic() = default;
+    DoNothingAlgebraic(const DoNothingAlgebraic& d) = default;
+    DoNothingAlgebraic(DoNothingAlgebraic&& d) = default;
+    DoNothingAlgebraic& operator=(const DoNothingAlgebraic& d) = default;
+    DoNothingAlgebraic& operator=(DoNothingAlgebraic&& d) = default;
+    virtual ~DoNothingAlgebraic() = default;
+
+    void call(State<N>&, const double&) const override { return; }
+};
+
+template<size_t N>
+class DoNothingDerivative : public Derivative<N>
+{
+public:
+    DoNothingDerivative() = default;
+    DoNothingDerivative(const DoNothingDerivative& d) = default;
+    DoNothingDerivative(DoNothingDerivative&& d) = default;
+    DoNothingDerivative& operator=(const DoNothingDerivative& d) = default;
+    DoNothingDerivative& operator=(DoNothingDerivative&& d) = default;
+    virtual ~DoNothingDerivative() = default;
+
+    State<N> call(const State<N>&) const override { return State<N>(0.0); }
+};
+
 
 #endif // FUNCTION_HPP

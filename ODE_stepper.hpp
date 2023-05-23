@@ -17,6 +17,9 @@ template<size_t N>
 class ODE_stepper
 {
 public:
+    static constexpr size_t size() { return N; }
+    static constexpr size_t _N = N;
+
     ODE_stepper() = default;
     ODE_stepper(const ODE_stepper& d) = default;
     ODE_stepper(ODE_stepper&& d) = default;
@@ -101,6 +104,36 @@ public:
         State<N> k2 = (*_dfunc)(state + k1*dt/2.0);
         State<N> k3 = (*_dfunc)(state + k2*dt/2.0);
         State<N> k4 = (*_dfunc)(state + k3*dt);
+
+        assert(state.size() == k1.size());
+        assert(state.size() == k2.size());
+        assert(state.size() == k3.size());
+        assert(state.size() == k4.size());
+
+        state += (k1 + 2.0*k2 + 2.0*k3 + k4)*dt/6.0;
+    }
+};
+
+// ================================================================================================= //
+// ========================================= Template test ========================================= //
+// ================================================================================================= //
+
+template <typename T>
+requires std::is_base_of_v<Derivative<T::_N>, T>
+class RK4_template_stepper : public ODE_stepper<T::_N>
+{
+private:
+    T _dfunc;
+
+public:
+    RK4_template_stepper(const T& dfunc) : _dfunc{dfunc} {}
+
+    void inline step(State<T::_N>& state, const double& dt) const override
+    {
+        State<T::_N> k1 = _dfunc(state);
+        State<T::_N> k2 = _dfunc(state + k1*dt/2.0);
+        State<T::_N> k3 = _dfunc(state + k2*dt/2.0);
+        State<T::_N> k4 = _dfunc(state + k3*dt);
 
         assert(state.size() == k1.size());
         assert(state.size() == k2.size());

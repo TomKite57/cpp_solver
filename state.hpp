@@ -15,6 +15,9 @@ template<size_t N>
 class State
 {
 public:
+    static constexpr size_t size() { return N; }
+    static constexpr size_t _N = N;
+
     friend State<N> operator*(double scalar, const State<N>& state)
     {
         return state*scalar;
@@ -178,9 +181,6 @@ public:
             _data[i] /= scalar;
         }
     }
-
-    // Accessor functions
-    static constexpr size_t size() { return N; }
 
 private:
     std::array<double, N> _data;
