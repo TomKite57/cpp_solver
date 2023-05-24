@@ -33,12 +33,13 @@ public:
     virtual void call(State<N>& state, const double& dt) const = 0;
 };
 
-
+// ======================================= Dynamic algebraic ======================================= //
+// Wrapper
 template<size_t N>
 class WrappedAlgebraic : public Algebraic<N>
 {
 private:
-    std::function<void(State<N>&, const double&)> _func;
+    const std::function<void(State<N>&, const double&)> _func;
 
 public:
     WrappedAlgebraic() = default;
@@ -55,61 +56,26 @@ public:
     virtual void call(State<N>& state, const double& dt) const override { _func(state, dt); }
 };
 
-
-template<size_t ind, size_t N>
-class Incrementor : public Algebraic<N>
-{
-public:
-    Incrementor() = default;
-    Incrementor(const Incrementor& d) = default;
-    Incrementor(Incrementor&& d) = default;
-    Incrementor& operator=(const Incrementor& d) = default;
-    Incrementor& operator=(Incrementor&& d) = default;
-    virtual ~Incrementor() = default;
-
-    void call(State<N>& state, const double& dt) const override
-    {
-        state[ind] += dt;
-    }
-};
-
-
-template<size_t ind, size_t N>
-class Decrementor : public Algebraic<N>
-{
-public:
-    Decrementor() = default;
-    Decrementor(const Decrementor& d) = default;
-    Decrementor(Decrementor&& d) = default;
-    Decrementor& operator=(const Decrementor& d) = default;
-    Decrementor& operator=(Decrementor&& d) = default;
-    virtual ~Decrementor() = default;
-
-    void call(State<N>& state, const double& dt) const override
-    {
-        state[ind] -= dt;
-    }
-};
-
+// Composite
 template<size_t N>
 class CompositeAlgebraic : public Algebraic<N>
 {
 private:
-    std::vector<std::shared_ptr<Algebraic<N>>> _functions;
+    std::vector<std::shared_ptr<const Algebraic<N>>> _functions;
 
     // add_function_helpers
     template <typename V>
     requires std::constructible_from<WrappedAlgebraic<N>, V> && (!std::is_base_of_v<Algebraic<N>, V>)
     void add_function_helper(const V& function)
     {
-        _functions.push_back(std::make_shared<WrappedAlgebraic<N>>(function));
+        _functions.push_back(std::make_shared<const WrappedAlgebraic<N>>(function));
     }
 
     template <typename V>
     requires std::is_base_of_v<Algebraic<N>, V>
     void add_function_helper(const V& function)
     {
-        _functions.push_back(std::make_shared<V>(function));
+        _functions.push_back(std::make_shared<const V>(function));
     }
 
     void add_function_helper(const std::shared_ptr<Algebraic<N>>& function)
@@ -151,6 +117,43 @@ public:
         {
             (*f)(state, dt);
         }
+    }
+};
+
+// ======================================= Concrete algebraic ====================================== //
+// Increment time
+template<size_t ind, size_t N>
+class Incrementor : public Algebraic<N>
+{
+public:
+    Incrementor() = default;
+    Incrementor(const Incrementor& d) = default;
+    Incrementor(Incrementor&& d) = default;
+    Incrementor& operator=(const Incrementor& d) = default;
+    Incrementor& operator=(Incrementor&& d) = default;
+    virtual ~Incrementor() = default;
+
+    void call(State<N>& state, const double& dt) const override
+    {
+        state[ind] += dt;
+    }
+};
+
+// Decrement time
+template<size_t ind, size_t N>
+class Decrementor : public Algebraic<N>
+{
+public:
+    Decrementor() = default;
+    Decrementor(const Decrementor& d) = default;
+    Decrementor(Decrementor&& d) = default;
+    Decrementor& operator=(const Decrementor& d) = default;
+    Decrementor& operator=(Decrementor&& d) = default;
+    virtual ~Decrementor() = default;
+
+    void call(State<N>& state, const double& dt) const override
+    {
+        state[ind] -= dt;
     }
 };
 
