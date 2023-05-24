@@ -6,7 +6,8 @@
 #include <memory>
 
 #include "state.hpp"
-#include "function.hpp"
+#include "algebraic.hpp"
+#include "derivative.hpp"
 
 // ================================================================================================= //
 // =================================== General Solver Interface ==================================== //

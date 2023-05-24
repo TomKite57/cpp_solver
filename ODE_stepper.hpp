@@ -2,13 +2,15 @@
 #ifndef ODE_STEPPER_HPP
 #define ODE_STEPPER_HPP
 
-
 #include <array>
 #include <cassert>
 #include <memory>
 #include <iostream>
 #include "stddef.h"
-#include "function.hpp"
+
+#include "state.hpp"
+#include "algebraic.hpp"
+#include "derivative.hpp"
 
 // ================================================================================================= //
 // ===================================== ODE Stepper Interface ===================================== //

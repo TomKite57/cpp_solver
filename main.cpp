@@ -11,7 +11,8 @@
 #include "utils.hpp"
 #include "state.hpp"
 #include "ODE_stepper.hpp"
-#include "function.hpp"
+#include "algebraic.hpp"
+#include "derivative.hpp"
 #include "solver.hpp"
 
 enum variable : size_t { x, xdot, y, ydot };
