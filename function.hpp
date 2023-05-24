@@ -33,6 +33,8 @@ public:
 };
 
 
+// ====================================== Dynamic derivatives ====================================== //
+// Wrapper
 template<size_t N>
 class WrappedDerivative : public Derivative<N>
 {
@@ -54,37 +56,7 @@ public:
     virtual State<N> call(const State<N>& state) const override { return _dfunc(state); }
 };
 
-
-template<size_t x_ind, size_t dx_ind, size_t N>
-class CircularAcceleration : public Derivative<N>
-{
-public:
-    const double _omega2;
-    static constexpr size_t _x_ind = x_ind;
-    static constexpr size_t _dx_ind = dx_ind;
-
-public:
-    CircularAcceleration(double omega2) : _omega2{omega2} {}
-
-    CircularAcceleration(const CircularAcceleration& d): _omega2(d._omega2) {}
-    CircularAcceleration(CircularAcceleration&& d): _omega2(d._omega2) {}
-    CircularAcceleration& operator=(const CircularAcceleration& d){ _omega2 = d._omega2; return *this; }
-    CircularAcceleration& operator=(CircularAcceleration&& d){ _omega2 = d._omega2; return *this; }
-    virtual ~CircularAcceleration() {}
-
-    State<N> call(const State<N>& state) const override
-    {
-        static_assert(state.size() > _x_ind);
-        static_assert(state.size() > _dx_ind);
-
-        State<N> dstate(0.0);
-        dstate[_x_ind] = state[_dx_ind];
-        dstate[_dx_ind] = -_omega2*state[_x_ind];
-        return dstate;
-    }
-};
-
-
+// Composite
 template<size_t N>
 class CompositeDerivative : public Derivative<N>
 {
@@ -147,6 +119,101 @@ public:
             result += (*f)(state);
 
         return result;
+    }
+};
+
+// ====================================== Template derivatives ===================================== //
+// Wrapper
+template<size_t N, typename V>
+requires std::invocable<const V&, const State<N>&> && std::same_as<std::invoke_result_t<const V&, const State<N>&>, State<N>>
+class TWrappedDerivative : public Derivative<N>
+{
+private:
+    const V _dfunc;
+
+public:
+    TWrappedDerivative() = delete;
+    TWrappedDerivative(const TWrappedDerivative& d) = default;
+    TWrappedDerivative(TWrappedDerivative&& d) = default;
+    TWrappedDerivative& operator=(const TWrappedDerivative& d) = default;
+    TWrappedDerivative& operator=(TWrappedDerivative&& d) = default;
+    virtual ~TWrappedDerivative() = default;
+
+    TWrappedDerivative(const V& dfunc) : _dfunc{dfunc} {}
+
+    virtual State<N> call(const State<N>& state) const override { return _dfunc(state); }
+};
+
+template<size_t N, typename V>
+requires std::invocable<const V&, const State<N>&> && std::same_as<std::invoke_result_t<const V&, const State<N>&>, State<N>>
+auto MakeWrappedDerivative(const V& dfunc) -> TWrappedDerivative<N, V>
+{
+    return TWrappedDerivative<N, V>(dfunc);
+}
+
+// Composite
+template<size_t N, typename... Args>
+class TCompositeDerivative : public Derivative<N>
+{
+private:
+    const std::tuple<const Args...> _functions;
+
+public:
+    TCompositeDerivative() = delete;
+    TCompositeDerivative(const TCompositeDerivative& d) = default;
+    TCompositeDerivative(TCompositeDerivative&& d) = default;
+    TCompositeDerivative& operator=(const TCompositeDerivative& d) = default;
+    TCompositeDerivative& operator=(TCompositeDerivative&& d) = default;
+    virtual ~TCompositeDerivative() = default;
+
+    // Variadic constructor
+    template <typename... VS>
+    TCompositeDerivative(const VS&... dfuncs): _functions{dfuncs...} {}
+
+    virtual State<N> call(const State<N>& state) const override
+    {
+        State<N> result = State<N>(0.0);
+
+        std::apply([&](auto&&... args) { ((result += args(state)), ...); }, _functions);
+
+        return result;
+    }
+};
+
+template<size_t N, typename... Args>
+auto MakeCompositeDerivative(const Args&... args) -> TCompositeDerivative<N, Args...>
+{
+    return TCompositeDerivative<N, Args...>(args...);
+}
+
+// ====================================== Concrete derivatives ===================================== //
+// SHM
+template<size_t x_ind, size_t dx_ind, size_t N>
+class CircularAcceleration : public Derivative<N>
+{
+public:
+    const double _omega2;
+    static constexpr size_t _x_ind = x_ind;
+    static constexpr size_t _dx_ind = dx_ind;
+
+public:
+    CircularAcceleration(double omega2) : _omega2{omega2} {}
+
+    CircularAcceleration(const CircularAcceleration& d): _omega2(d._omega2) {}
+    CircularAcceleration(CircularAcceleration&& d): _omega2(d._omega2) {}
+    CircularAcceleration& operator=(const CircularAcceleration& d){ _omega2 = d._omega2; return *this; }
+    CircularAcceleration& operator=(CircularAcceleration&& d){ _omega2 = d._omega2; return *this; }
+    virtual ~CircularAcceleration() {}
+
+    State<N> call(const State<N>& state) const override
+    {
+        static_assert(state.size() > _x_ind);
+        static_assert(state.size() > _dx_ind);
+
+        State<N> dstate(0.0);
+        dstate[_x_ind] = state[_dx_ind];
+        dstate[_dx_ind] = -_omega2*state[_x_ind];
+        return dstate;
     }
 };
 
