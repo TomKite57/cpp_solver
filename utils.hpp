@@ -55,12 +55,12 @@ double time_function(Function&& func, size_t times, Args&&... args) {
 }
 
 template<typename Function, typename... Args>
-std::pair<double, double> timing_mean_std(Function&& func, size_t times, Args&&... args) {
-    assert(times > 2);
+std::pair<double, double> timing_mean_std(size_t batches, size_t repeats, Function&& func, Args&&... args) {
+    assert(batches > 2);
 
     std::vector<double> times_vec;
-    for (size_t i = 0; i < times; ++i) {
-        times_vec.push_back(time_function(func, 1, std::forward<Args>(args)...));
+    for (size_t i = 0; i < batches; ++i) {
+        times_vec.push_back(time_function(func, repeats, std::forward<Args>(args)...));
     }
 
     double sum = 0;
@@ -68,14 +68,14 @@ std::pair<double, double> timing_mean_std(Function&& func, size_t times, Args&&.
         sum += t;
     }
 
-    double mean = sum / static_cast<double>(times);
+    double mean = sum / static_cast<double>(batches);
 
     double sq_sum = 0;
     for (const auto& t : times_vec) {
         sq_sum += (t - mean) * (t - mean);
     }
 
-    double stdev = std::sqrt(sq_sum / static_cast<double>(times));
+    double stdev = std::sqrt(sq_sum / static_cast<double>(batches));
 
     return std::make_pair(mean, stdev);
 }
