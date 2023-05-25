@@ -25,7 +25,6 @@ public:
 
     friend std::ostream& operator<<(std::ostream& os, const State<N>& state)
     {
-        os << "State(";
         for (size_t i = 0; i < N; ++i)
         {
             os << state[i];
@@ -34,8 +33,12 @@ public:
                 os << ", ";
             }
         }
-        os << ")";
         return os;
+    }
+
+    friend void print(const State<N>& state)
+    {
+        std::cout << "State(" << state << ")\n";
     }
 
     // Constructor that initializes all elements of the array to the given value

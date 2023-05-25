@@ -1,6 +1,7 @@
 
 #include <iostream>
 #include <iomanip>
+#include <fstream>
 #include <vector>
 #include <valarray>
 #include <string>
@@ -15,10 +16,15 @@
 #include "derivative.hpp"
 #include "solver.hpp"
 
-enum variable : size_t { x, xdot, y, ydot };
+// TODO
+// - Make sure position of N template parameter is consistent
+// - Consistent naming for all template makers
+// - Consistent naming for all template classes (T at start)
 
-int main()
+
+void timing_tests()
 {
+    enum variable : size_t { x, xdot, y, ydot };
     constexpr size_t N = 5;
     constexpr size_t W = 20;
     constexpr size_t REPEATS = 5'000'000;
@@ -84,6 +90,64 @@ int main()
     auto reduced_solver = MakeTemplateSolver(template_stepper, DoNothingAlgebraic<N>{}, DoNothingAlgebraic<N>{});
     // Time
     std::cout << std::setw(W) << "Reduced Solver : " << timing_mean_std(BATCHES, REPEATS, reduced_solver, state, 0.1) << " seconds" << std::endl;
+}
+
+void bouncy_ball_test()
+{
+    // Constants
+    enum variable : size_t { t, y, ydot };
+    constexpr size_t N = 3;
+    const double g = 9.81;
+    const double e = 0.98;
+
+    assert(e <= 1.0 && e >= 0.0);
+
+    // Parameters
+    const double tf = 100.0;
+    const double dt = 0.01;
+    const size_t steps = static_cast<size_t>(tf/dt);
+
+    // Initial conditions
+    State<N> state = {0.0, 10.0, 0.0};
+
+    const auto bouncer = MakeWrappedAlgebraic<N>(
+            [=](State<N>& s, const double& dt) -> void
+            {
+                if (s[y] < 0.0)
+                {
+                    s[y] = -s[y];
+                    s[ydot] = -e*s[ydot];
+                }
+            }
+        );
+
+    const auto gravity = MakeWrappedDerivative<N>(
+            [=](const State<N>& s) -> State<N>
+            {
+                State<N> ds(0.0);
+                ds[y] = s[ydot];
+                ds[ydot] = -g;
+                return ds;
+            }
+        );
+
+    const auto ode_stepper = MakeTemplateRK4Stepper<N>(gravity);
+    const auto solver = MakeTemplateSolver(ode_stepper, Incrementor<t, N>{}, bouncer);
+
+    auto out_file = std::ofstream("bouncy_ball.dat");
+    out_file << "t, y, ydot" << std::endl;
+    for (size_t i = 0; i < steps; ++i)
+    {
+        solver(state, dt);
+        out_file << state << std::endl;
+    }
+}
+
+int main()
+{
+    //timing_tests();
+
+    bouncy_ball_test();
 
     return 0;
 }
