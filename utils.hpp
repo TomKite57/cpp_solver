@@ -45,7 +45,7 @@ std::ostream& operator<<(std::ostream& os, const std::pair<A, B>& p)
 
 
 template<typename Function, typename... Args>
-double time_function(Function&& func, size_t times, Args&&... args) {
+double time_function(size_t times, Function&& func, Args&&... args) {
     auto start = std::chrono::high_resolution_clock::now();
     for (size_t i = 0; i < times; ++i) {
         std::invoke(func, std::forward<Args>(args)...);
@@ -60,7 +60,7 @@ std::pair<double, double> timing_mean_std(size_t batches, size_t repeats, Functi
 
     std::vector<double> times_vec;
     for (size_t i = 0; i < batches; ++i) {
-        times_vec.push_back(time_function(func, repeats, std::forward<Args>(args)...));
+        times_vec.push_back(time_function(repeats, func, std::forward<Args>(args)...));
     }
 
     double sum = 0;
