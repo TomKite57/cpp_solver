@@ -120,6 +120,63 @@ public:
     }
 };
 
+// ======================================= Template algebraic ====================================== //
+// Wrapper
+template<size_t N, typename V>
+class TWrappedAlgebraic : public Algebraic<N>
+{
+private:
+    const V _func;
+
+public:
+    TWrappedAlgebraic() = delete;
+    TWrappedAlgebraic(const TWrappedAlgebraic& d) = default;
+    TWrappedAlgebraic(TWrappedAlgebraic&& d) = default;
+    TWrappedAlgebraic& operator=(const TWrappedAlgebraic& d) = default;
+    TWrappedAlgebraic& operator=(TWrappedAlgebraic&& d) = default;
+    ~TWrappedAlgebraic() = default;
+
+    TWrappedAlgebraic(const V& func) : _func{func} {}
+
+    void call(State<N>& state, const double& dt) const override { _func(state, dt); }
+};
+
+template<size_t N, typename V>
+requires std::invocable<V, State<N>&, const double&>
+auto MakeWrappedAlgebraic(const V& func) -> TWrappedAlgebraic<N, V>
+{
+    return TWrappedAlgebraic<N, V>(func);
+}
+
+// Composite
+template<size_t N, typename... Args>
+class TCompositeAlgebraic : public Algebraic<N>
+{
+private:
+    const std::tuple<const Args...> _functions;
+
+public:
+    TCompositeAlgebraic() = delete;
+    TCompositeAlgebraic(const TCompositeAlgebraic& d) = default;
+    TCompositeAlgebraic(TCompositeAlgebraic&& d) = default;
+    TCompositeAlgebraic& operator=(const TCompositeAlgebraic& d) = default;
+    TCompositeAlgebraic& operator=(TCompositeAlgebraic&& d) = default;
+    ~TCompositeAlgebraic() = default;
+
+    TCompositeAlgebraic(const Args&... dfuncs) : _functions{dfuncs...} {}
+
+    void call(State<N>& state, const double& dt) const override
+    {
+        std::apply([&](const auto&... f) { (f(state, dt), ...); }, _functions);
+    }
+};
+
+template<size_t N, typename... Args>
+auto MakeCompositeAlgebraic(const Args&... dfuncs) -> TCompositeAlgebraic<N, Args...>
+{
+    return TCompositeAlgebraic<N, Args...>(dfuncs...);
+}
+
 // ======================================= Concrete algebraic ====================================== //
 // Increment time
 template<size_t ind, size_t N>

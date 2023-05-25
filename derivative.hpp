@@ -139,11 +139,11 @@ public:
     TWrappedDerivative(TWrappedDerivative&& d) = default;
     TWrappedDerivative& operator=(const TWrappedDerivative& d) = default;
     TWrappedDerivative& operator=(TWrappedDerivative&& d) = default;
-    virtual ~TWrappedDerivative() = default;
+    ~TWrappedDerivative() = default;
 
     TWrappedDerivative(const V& dfunc) : _dfunc{dfunc} {}
 
-    virtual State<N> call(const State<N>& state) const override { return _dfunc(state); }
+    State<N> call(const State<N>& state) const override { return _dfunc(state); }
 };
 
 template<size_t N, typename V>
@@ -166,13 +166,13 @@ public:
     TCompositeDerivative(TCompositeDerivative&& d) = default;
     TCompositeDerivative& operator=(const TCompositeDerivative& d) = default;
     TCompositeDerivative& operator=(TCompositeDerivative&& d) = default;
-    virtual ~TCompositeDerivative() = default;
+    ~TCompositeDerivative() = default;
 
     // Variadic constructor
     template <typename... VS>
     TCompositeDerivative(const VS&... dfuncs): _functions{dfuncs...} {}
 
-    virtual State<N> call(const State<N>& state) const override
+    State<N> call(const State<N>& state) const override
     {
         State<N> result = State<N>(0.0);
 
