@@ -7,43 +7,66 @@
 #include <functional>
 #include <utility>
 
+// ================================================================================================= //
+// ======================================== ostream helpers ======================================== //
+// ================================================================================================= //
 
 template<typename T, size_t N>
 std::ostream& operator<<(std::ostream& os, const std::array<T, N>& v)
 {
-    os << "array(";
     for (const auto& x : v)
     {
         os << x;
         if (&x != &v[v.size()-1])
             os << ", ";
     }
-    os << ")";
     return os;
 }
 
-template<typename T, size_t N>
-std::ostream& operator<<(std::ostream& os, std::array<T, N>&& v)
+template<typename T>
+std::ostream& operator<<(std::ostream& os, const std::vector<T>& v)
 {
-    os << "array(";
     for (const auto& x : v)
     {
         os << x;
         if (&x != &v[v.size()-1])
             os << ", ";
     }
-    os << ")";
     return os;
 }
 
 template<typename A, typename B>
 std::ostream& operator<<(std::ostream& os, const std::pair<A, B>& p)
 {
-    os << "pair(" << p.first << ", " << p.second << ")";
+    os << p.first << ", " << p.second;
     return os;
 }
 
+// ================================================================================================= //
+// ======================================== print helpers ========================================== //
+// ================================================================================================= //
+template<typename T, size_t N>
+void print(const std::array<T, N>& t)
+{
+    std::cout << "array(" << t << ")\n";
+}
 
+template <typename T>
+void print(const std::vector<T>& t)
+{
+    std::cout << "vector(" << t << ")\n";
+}
+
+template<typename A, typename B>
+void print(const std::pair<A, B>& p)
+{
+    std::cout << "pair(" << p << ")\n";
+}
+
+
+// ================================================================================================= //
+// ======================================== timing helpers ========================================= //
+// ================================================================================================= //
 template<typename Function, typename... Args>
 double time_function(size_t times, Function&& func, Args&&... args) {
     auto start = std::chrono::high_resolution_clock::now();
