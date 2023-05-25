@@ -66,6 +66,8 @@ int main()
     auto incrementor = MakeWrappedAlgebraic<N>([](State<N>& s, const double& dt) -> void { s[N-1] += dt; });
     auto decrementor = MakeWrappedAlgebraic<N>([](State<N>& s, const double& dt) -> void { s[N-1] -= dt; });
 
+    auto full_func = MakeCompositeAlgebraic<N>(incrementor, template_stepper);
+
     auto more_stupid_algebra = MakeCompositeAlgebraic<N>(
         incrementor,
         decrementor,
@@ -74,6 +76,10 @@ int main()
     auto template_solver = MakeTemplateSolver(template_stepper, DoNothingAlgebraic<N>{}, more_stupid_algebra);
     // Time
     std::cout << std::setw(W) << "Template Solver : " << timing_mean_std([&](){return time_function(template_solver, R/10, state, 0.1);}, 10) << " seconds" << std::endl;
+
+    auto reduced_solver = MakeTemplateSolver(template_stepper, DoNothingAlgebraic<N>{}, DoNothingAlgebraic<N>{});
+    // Time
+    std::cout << std::setw(W) << "Reduced Solver : " << timing_mean_std([&](){return time_function(reduced_solver, R/10, state, 0.1);}, 10) << " seconds" << std::endl;
 
     return 0;
 }

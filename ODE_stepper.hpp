@@ -16,7 +16,7 @@
 // ===================================== ODE Stepper Interface ===================================== //
 // ================================================================================================= //
 template<size_t N>
-class ODE_stepper
+class ODE_stepper: private Algebraic<N>
 {
 public:
     static constexpr size_t size() { return N; }
@@ -33,6 +33,12 @@ public:
     {
         step(state, dt);
     }
+
+    void call(State<N>& state, const double& dt) const override
+    {
+        step(state, dt);
+    }
+
     virtual void step(State<N>& state, const double& dt) const = 0;
 };
 
