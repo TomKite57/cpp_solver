@@ -43,14 +43,17 @@ int main()
 
     // Template stepper
     state = {1.0, 2.0, 3.0, 4.0, 0.0};
-    RK4_template_stepper template_stepper
-    {
+
+    //RK4_template_stepper<N, CompositeDerivative<N>> template_stepper
+    auto template_stepper = MakeTemplateRK4Stepper<N>
+    (
         CompositeDerivative<N>
         {
             [](const State<N>& s){ State<N> ds(0.0); ds[x] = s[xdot]; ds[xdot] = -s[x]; return ds; },
             [](const State<N>& s){ State<N> ds(0.0); ds[y] = s[ydot]; ds[ydot] = -2.0*s[y]; return ds; }
         }
-    };
+    );
+
     std::cout << std::setw(W) << "Template Stepper : " << timing_mean_std([&](){return time_function(template_stepper, R/10, state, 0.1);}, 10) << " seconds" << std::endl;
 
     // Dynamic Stepper

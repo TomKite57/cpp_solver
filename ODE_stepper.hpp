@@ -16,7 +16,7 @@
 // ===================================== ODE Stepper Interface ===================================== //
 // ================================================================================================= //
 template<size_t N>
-class ODE_stepper: private Algebraic<N>
+class ODE_stepper: public Algebraic<N>
 {
 public:
     static constexpr size_t size() { return N; }
@@ -126,9 +126,9 @@ public:
 // ========================================= Template test ========================================= //
 // ================================================================================================= //
 
-template <typename T>
-requires std::is_base_of_v<Derivative<T::_N>, T>
-class RK4_template_stepper : public ODE_stepper<T::_N>
+template <size_t N, typename T>
+requires std::invocable<T, State<N>>
+class RK4_template_stepper : public ODE_stepper<N>
 {
 private:
     const T _dfunc;
@@ -136,12 +136,12 @@ private:
 public:
     RK4_template_stepper(const T& dfunc) : _dfunc{dfunc} {}
 
-    void inline step(State<T::_N>& state, const double& dt) const override
+    void inline step(State<N>& state, const double& dt) const override
     {
-        State<T::_N> k1 = _dfunc(state);
-        State<T::_N> k2 = _dfunc(state + k1*dt/2.0);
-        State<T::_N> k3 = _dfunc(state + k2*dt/2.0);
-        State<T::_N> k4 = _dfunc(state + k3*dt);
+        State<N> k1 = _dfunc(state);
+        State<N> k2 = _dfunc(state + k1*dt/2.0);
+        State<N> k3 = _dfunc(state + k2*dt/2.0);
+        State<N> k4 = _dfunc(state + k3*dt);
 
         assert(state.size() == k1.size());
         assert(state.size() == k2.size());
@@ -151,5 +151,11 @@ public:
         state += (k1 + 2.0*k2 + 2.0*k3 + k4)*dt/6.0;
     }
 };
+
+template <size_t N, typename T>
+auto MakeTemplateRK4Stepper(const T& dfunc) -> RK4_template_stepper<N, T>
+{
+    return RK4_template_stepper<N, T>(dfunc);
+}
 
 #endif // ODE_STEPPER_HPP
