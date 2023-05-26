@@ -99,7 +99,7 @@ void bouncy_ball_test()
 
     // Parameters
     const double tf = 100.0;
-    const double dt = 0.01;
+    const double dt = 0.001;
     const size_t steps = static_cast<size_t>(tf/dt);
 
     // Initial conditions
@@ -127,10 +127,51 @@ void bouncy_ball_test()
         );
 
     const auto ode_stepper = MakeRK4Stepper<N>(gravity);
+    const auto alg_stpper = MakeCompositeAlgebraic<N>(Incrementor<N, t>{}, ode_stepper, bouncer);
     const auto solver = MakePrePostSolver(ode_stepper, Incrementor<N, t>{}, bouncer);
 
     auto out_file = std::ofstream("bouncy_ball.dat");
     out_file << "t, y, ydot" << std::endl;
+    for (size_t i = 0; i < steps; ++i)
+    {
+        alg_stpper(state, dt);
+        out_file << state << std::endl;
+    }
+}
+
+void forced_damped_oscillator_test()
+{
+    // Constants
+    enum variable : size_t { t, x, xdot };
+    constexpr size_t N = 3;
+    const double m = 1.0;
+    const double k = 1.0;
+    const double c = 0.1;
+    const double F = 1.0;
+    const double om = 1.0;
+
+    // Parameters
+    const double tf = 100.0;
+    const double dt = 0.001;
+    const size_t steps = static_cast<size_t>(tf/dt);
+
+    // Initial conditions
+    State<N> state = {0.0, 1.0, 0.0};
+
+    // Derivative
+    auto deriv = [=](const State<N>& s) -> State<N>
+    {
+        State<N> ds(0.0);
+        ds[x] = s[xdot];
+        ds[xdot] = (F*std::sin(om*s[t]) - c*s[xdot] - k*s[x])/m;
+        return ds;
+    };
+
+    // Stepper
+    auto stepper = MakeRK4Stepper<N>(deriv);
+    auto solver = MakeCompositeAlgebraic<N>(Incrementor<N, t>{}, stepper);
+
+    auto out_file = std::ofstream("forced_damped_oscillator.dat");
     for (size_t i = 0; i < steps; ++i)
     {
         solver(state, dt);
@@ -142,7 +183,9 @@ int main()
 {
     //timing_tests();
 
-    bouncy_ball_test();
+    //bouncy_ball_test();
+
+    forced_damped_oscillator_test();
 
     return 0;
 }
