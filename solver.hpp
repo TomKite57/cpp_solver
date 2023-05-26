@@ -33,8 +33,9 @@ public:
     virtual void step(State<N>& state, const double& dt) const = 0;
 };
 
+// PrePostSolver
 template <size_t N>
-class DynamicSolver : public Solver<N>
+class PrePostSolver : public Solver<N>
 {
 private:
     std::shared_ptr<ODEStepper<N>> _ODE_stepper{nullptr};
@@ -43,22 +44,22 @@ private:
 
 
 public:
-    DynamicSolver() = default;
-    DynamicSolver(const std::shared_ptr<ODEStepper<N>>& stepper) : _ODE_stepper{stepper} {}
+    PrePostSolver() = default;
+    PrePostSolver(const std::shared_ptr<ODEStepper<N>>& stepper) : _ODE_stepper{stepper} {}
 
     template <typename V>
     requires std::is_base_of_v<ODEStepper<N>, V>
-    DynamicSolver(const V& stepper): _ODE_stepper{std::make_shared<V>(stepper)} {}
+    PrePostSolver(const V& stepper): _ODE_stepper{std::make_shared<V>(stepper)} {}
 
     template <typename V>
     requires std::is_base_of_v<ODEStepper<N>, V>
-    DynamicSolver(V&& stepper): _ODE_stepper{std::make_shared<V>(std::move(stepper))} {}
+    PrePostSolver(V&& stepper): _ODE_stepper{std::make_shared<V>(std::move(stepper))} {}
 
-    DynamicSolver(const DynamicSolver& d) = default;
-    DynamicSolver(DynamicSolver&& d) = default;
-    DynamicSolver& operator=(const DynamicSolver& d) = default;
-    DynamicSolver& operator=(DynamicSolver&& d) = default;
-    virtual ~DynamicSolver() = default;
+    PrePostSolver(const PrePostSolver& d) = default;
+    PrePostSolver(PrePostSolver&& d) = default;
+    PrePostSolver& operator=(const PrePostSolver& d) = default;
+    PrePostSolver& operator=(PrePostSolver&& d) = default;
+    virtual ~PrePostSolver() = default;
 
     // Setters for the steppers
     void set_ODE_step(const std::shared_ptr<ODEStepper<N>>& function) { _ODE_stepper = function; }
@@ -106,7 +107,7 @@ public:
 template <size_t N, typename ODE, typename PRE, typename POST>
 requires std::is_base_of_v<ODEStepper<N>, ODE> && std::is_base_of_v<Algebraic<N>, PRE> && std::is_base_of_v<Algebraic<N>, POST> \
          && (N == ODE::_N) && (N == PRE::_N) && (N == POST::_N)
-class TSolver : public Solver<N>
+class TPrePostSolver : public Solver<N>
 {
 private:
     const ODE _ODE_stepper;
@@ -114,15 +115,15 @@ private:
     const POST _poststep;
 
 public:
-    TSolver(const ODE& ode, const PRE& pre, const POST& post):
+    TPrePostSolver(const ODE& ode, const PRE& pre, const POST& post):
     _ODE_stepper{ode}, _prestep{pre}, _poststep{post}
     {}
 
-    TSolver(const TSolver& d) = default;
-    TSolver(TSolver&& d) = default;
-    TSolver& operator=(const TSolver& d) = default;
-    TSolver& operator=(TSolver&& d) = default;
-    virtual ~TSolver() = default;
+    TPrePostSolver(const TPrePostSolver& d) = default;
+    TPrePostSolver(TPrePostSolver&& d) = default;
+    TPrePostSolver& operator=(const TPrePostSolver& d) = default;
+    TPrePostSolver& operator=(TPrePostSolver&& d) = default;
+    virtual ~TPrePostSolver() = default;
 
     virtual void step(State<N>& state, const double& dt) const override
     {
@@ -134,9 +135,9 @@ public:
 
 template <typename ODE, typename PRE, typename POST>
 requires std::is_base_of_v<ODEStepper<ODE::_N>, ODE> && std::is_base_of_v<Algebraic<ODE::_N>, PRE> && std::is_base_of_v<Algebraic<ODE::_N>, POST>
-auto MakeSolver(const ODE& ode, const PRE& pre, const POST& post) -> TSolver<ODE::_N, std::decay_t<ODE>, std::decay_t<PRE>, std::decay_t<POST>>
+auto MakePrePostSolver(const ODE& ode, const PRE& pre, const POST& post) -> TPrePostSolver<ODE::_N, std::decay_t<ODE>, std::decay_t<PRE>, std::decay_t<POST>>
 {
-    return TSolver<ODE::_N, std::decay_t<ODE>, std::decay_t<PRE>, std::decay_t<POST>>(ode, pre, post);
+    return TPrePostSolver<ODE::_N, std::decay_t<ODE>, std::decay_t<PRE>, std::decay_t<POST>>(ode, pre, post);
 }
 
 #endif // SOLVER_HPP

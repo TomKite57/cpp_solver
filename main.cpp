@@ -60,7 +60,7 @@ void timing_tests()
 
     // Dynamic Stepper
     state = {1.0, 2.0, 3.0, 4.0, 0.0};
-    DynamicSolver<N> solver;
+    PrePostSolver<N> solver;
     solver.set_poststep( Incrementor<N, N-1>{});
     solver.set_ODE_step(stepper);
     // Time
@@ -78,11 +78,11 @@ void timing_tests()
         decrementor,
         incrementor
     );
-    auto template_solver = MakeSolver(template_stepper, DoNothingAlgebraic<N>{}, more_stupid_algebra);
+    auto template_solver = MakePrePostSolver(template_stepper, DoNothingAlgebraic<N>{}, more_stupid_algebra);
     // Time
     std::cout << std::setw(W) << "Template Solver : " << timing_mean_std(BATCHES, REPEATS, template_solver, state, 0.1) << " seconds" << std::endl;
 
-    auto reduced_solver = MakeSolver(template_stepper, DoNothingAlgebraic<N>{}, DoNothingAlgebraic<N>{});
+    auto reduced_solver = MakePrePostSolver(template_stepper, DoNothingAlgebraic<N>{}, DoNothingAlgebraic<N>{});
     // Time
     std::cout << std::setw(W) << "Reduced Solver : " << timing_mean_std(BATCHES, REPEATS, reduced_solver, state, 0.1) << " seconds" << std::endl;
 }
@@ -127,7 +127,7 @@ void bouncy_ball_test()
         );
 
     const auto ode_stepper = MakeRK4Stepper<N>(gravity);
-    const auto solver = MakeSolver(ode_stepper, Incrementor<N, t>{}, bouncer);
+    const auto solver = MakePrePostSolver(ode_stepper, Incrementor<N, t>{}, bouncer);
 
     auto out_file = std::ofstream("bouncy_ball.dat");
     out_file << "t, y, ydot" << std::endl;
