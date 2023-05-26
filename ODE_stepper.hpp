@@ -16,18 +16,18 @@
 // ===================================== ODE Stepper Interface ===================================== //
 // ================================================================================================= //
 template<size_t N>
-class ODE_stepper: public Algebraic<N>
+class ODEStepper: public Algebraic<N>
 {
 public:
     static constexpr size_t size() { return N; }
     static constexpr size_t _N = N;
 
-    ODE_stepper() = default;
-    ODE_stepper(const ODE_stepper& d) = default;
-    ODE_stepper(ODE_stepper&& d) = default;
-    ODE_stepper& operator=(const ODE_stepper& d) = default;
-    ODE_stepper& operator=(ODE_stepper&& d) = default;
-    virtual ~ODE_stepper() = default;
+    ODEStepper() = default;
+    ODEStepper(const ODEStepper& d) = default;
+    ODEStepper(ODEStepper&& d) = default;
+    ODEStepper& operator=(const ODEStepper& d) = default;
+    ODEStepper& operator=(ODEStepper&& d) = default;
+    virtual ~ODEStepper() = default;
 
     void operator()(State<N>& state, const double& dt) const
     {
@@ -47,25 +47,25 @@ public:
 // ========================================= Euler Method ========================================== //
 // ================================================================================================= //
 template<size_t N>
-class Euler_stepper : public ODE_stepper<N>
+class EulerStepper : public ODEStepper<N>
 {
 private:
     //const std::function<State<N>(const State<N>&)> _dfunc;
     const std::shared_ptr<const Derivative<N>> _dfunc;
 public:
-    Euler_stepper(const std::shared_ptr<const Derivative<N>>& dfunc) : _dfunc{dfunc} {}
+    EulerStepper(const std::shared_ptr<const Derivative<N>>& dfunc) : _dfunc{dfunc} {}
 
     template <typename... VS>
     requires std::is_constructible_v<CompositeDerivative<N>, VS...>
-    Euler_stepper(VS&&... dfuncs) : _dfunc{std::make_shared<const CompositeDerivative<N>>(std::forward<VS>(dfuncs)...)} {}
+    EulerStepper(VS&&... dfuncs) : _dfunc{std::make_shared<const CompositeDerivative<N>>(std::forward<VS>(dfuncs)...)} {}
 
     template <typename V>
     requires std::is_base_of_v<Derivative<N>, V>
-    Euler_stepper(const V& dfunc) : _dfunc{std::make_shared<const V>(dfunc)} {}
+    EulerStepper(const V& dfunc) : _dfunc{std::make_shared<const V>(dfunc)} {}
 
     template <typename V>
     requires std::is_base_of_v<Derivative<N>, V>
-    Euler_stepper(V&& dfunc) : _dfunc{std::make_shared<const V>(std::move(dfunc))} {}
+    EulerStepper(V&& dfunc) : _dfunc{std::make_shared<const V>(std::move(dfunc))} {}
 
     void inline step(State<N>& state, const double& dt) const override
     {
@@ -81,30 +81,30 @@ public:
 // ========================================== RK4 Method =========================================== //
 // ================================================================================================= //
 template<size_t N>
-class RK4_stepper : public ODE_stepper<N>
+class RK4Stepper : public ODEStepper<N>
 {
 private:
     //const std::function<State<N>(const State<N>&)> _dfunc;
     const std::shared_ptr<const Derivative<N>> _dfunc;
 
 public:
-    RK4_stepper(const std::shared_ptr<const Derivative<N>>& dfunc) : _dfunc{dfunc} {}
+    RK4Stepper(const std::shared_ptr<const Derivative<N>>& dfunc) : _dfunc{dfunc} {}
 
     template <typename... VS>
     requires std::is_constructible_v<CompositeDerivative<N>, VS...>
-    RK4_stepper(VS&&... dfuncs) : _dfunc{std::make_shared<const CompositeDerivative<N>>(std::forward<VS>(dfuncs)...)} {}
+    RK4Stepper(VS&&... dfuncs) : _dfunc{std::make_shared<const CompositeDerivative<N>>(std::forward<VS>(dfuncs)...)} {}
 
     template <typename V>
     requires std::is_constructible_v<WrappedDerivative<N>, V> && (!std::is_base_of_v<Derivative<N>, V>)
-    RK4_stepper(const V& dfunc) : _dfunc{std::make_shared<const WrappedDerivative<N>>(dfunc)} {}
+    RK4Stepper(const V& dfunc) : _dfunc{std::make_shared<const WrappedDerivative<N>>(dfunc)} {}
 
     template <typename V>
     requires std::is_base_of_v<Derivative<N>, V>
-    RK4_stepper(const V& dfunc) : _dfunc{std::make_shared<const V>(dfunc)} {}
+    RK4Stepper(const V& dfunc) : _dfunc{std::make_shared<const V>(dfunc)} {}
 
     template <typename V>
     requires std::is_base_of_v<Derivative<N>, V>
-    RK4_stepper(V&& dfunc) : _dfunc{std::make_shared<const V>(std::move(dfunc))} {}
+    RK4Stepper(V&& dfunc) : _dfunc{std::make_shared<const V>(std::move(dfunc))} {}
 
     void inline step(State<N>& state, const double& dt) const override
     {
@@ -128,13 +128,13 @@ public:
 
 template <size_t N, typename T>
 requires std::invocable<T, State<N>>
-class RK4_template_stepper : public ODE_stepper<N>
+class TRK4Stepper : public ODEStepper<N>
 {
 private:
     const T _dfunc;
 
 public:
-    RK4_template_stepper(const T& dfunc) : _dfunc{dfunc} {}
+    TRK4Stepper(const T& dfunc) : _dfunc{dfunc} {}
 
     void inline step(State<N>& state, const double& dt) const override
     {
@@ -153,9 +153,9 @@ public:
 };
 
 template <size_t N, typename T>
-auto MakeTemplateRK4Stepper(const T& dfunc) -> RK4_template_stepper<N, T>
+auto MakeRK4Stepper(const T& dfunc) -> TRK4Stepper<N, T>
 {
-    return RK4_template_stepper<N, T>(dfunc);
+    return TRK4Stepper<N, T>(dfunc);
 }
 
 #endif // ODE_STEPPER_HPP

@@ -16,10 +16,6 @@
 #include "derivative.hpp"
 #include "solver.hpp"
 
-// TODO
-// - Consistent naming for all template makers
-// - Consistent naming for all template classes (T at start)
-
 
 void timing_tests()
 {
@@ -34,12 +30,12 @@ void timing_tests()
     const auto f2 = MakeWrappedDerivative<N>([](const State<N>& s){ State<N> ds(0.0); ds[y] = s[ydot]; ds[ydot] = -2.0*s[y]; return ds; });
 
     auto TDeriv = MakeCompositeDerivative<N>(f1, f2);
-    RK4_stepper<N> Tstepper(TDeriv);
+    RK4Stepper<N> Tstepper(TDeriv);
     std::cout << std::setw(W) << "Template Stepper : " << timing_mean_std(BATCHES, REPEATS, Tstepper, state, 0.1) << " seconds" << std::endl;
 
     // Simple Stepper
     state = {1.0, 2.0, 3.0, 4.0, 0.0};
-    RK4_stepper<N> stepper
+    RK4Stepper<N> stepper
     {
         [](const State<N>& s){ State<N> ds(0.0); ds[x] = s[xdot]; ds[xdot] = -s[x]; return ds; },
         [](const State<N>& s){ State<N> ds(0.0); ds[y] = s[ydot]; ds[ydot] = -2.0*s[y]; return ds; }
@@ -51,7 +47,7 @@ void timing_tests()
     state = {1.0, 2.0, 3.0, 4.0, 0.0};
 
     //RK4_template_stepper<N, CompositeDerivative<N>> template_stepper
-    auto template_stepper = MakeTemplateRK4Stepper<N>
+    auto template_stepper = MakeRK4Stepper<N>
     (
         CompositeDerivative<N>
         {
@@ -82,11 +78,11 @@ void timing_tests()
         decrementor,
         incrementor
     );
-    auto template_solver = MakeTemplateSolver(template_stepper, DoNothingAlgebraic<N>{}, more_stupid_algebra);
+    auto template_solver = MakeSolver(template_stepper, DoNothingAlgebraic<N>{}, more_stupid_algebra);
     // Time
     std::cout << std::setw(W) << "Template Solver : " << timing_mean_std(BATCHES, REPEATS, template_solver, state, 0.1) << " seconds" << std::endl;
 
-    auto reduced_solver = MakeTemplateSolver(template_stepper, DoNothingAlgebraic<N>{}, DoNothingAlgebraic<N>{});
+    auto reduced_solver = MakeSolver(template_stepper, DoNothingAlgebraic<N>{}, DoNothingAlgebraic<N>{});
     // Time
     std::cout << std::setw(W) << "Reduced Solver : " << timing_mean_std(BATCHES, REPEATS, reduced_solver, state, 0.1) << " seconds" << std::endl;
 }
@@ -130,8 +126,8 @@ void bouncy_ball_test()
             }
         );
 
-    const auto ode_stepper = MakeTemplateRK4Stepper<N>(gravity);
-    const auto solver = MakeTemplateSolver(ode_stepper, Incrementor<N, t>{}, bouncer);
+    const auto ode_stepper = MakeRK4Stepper<N>(gravity);
+    const auto solver = MakeSolver(ode_stepper, Incrementor<N, t>{}, bouncer);
 
     auto out_file = std::ofstream("bouncy_ball.dat");
     out_file << "t, y, ydot" << std::endl;
