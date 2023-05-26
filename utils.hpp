@@ -11,7 +11,7 @@
 // ======================================== ostream helpers ======================================== //
 // ================================================================================================= //
 
-template<typename T, size_t N>
+template<size_t N, typename T>
 std::ostream& operator<<(std::ostream& os, const std::array<T, N>& v)
 {
     for (const auto& x : v)
@@ -45,7 +45,7 @@ std::ostream& operator<<(std::ostream& os, const std::pair<A, B>& p)
 // ================================================================================================= //
 // ======================================== print helpers ========================================== //
 // ================================================================================================= //
-template<typename T, size_t N>
+template<size_t N, typename T>
 void print(const std::array<T, N>& t)
 {
     std::cout << "array(" << t << ")\n";

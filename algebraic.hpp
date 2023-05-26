@@ -179,7 +179,7 @@ auto MakeCompositeAlgebraic(const Args&... dfuncs) -> TCompositeAlgebraic<N, Arg
 
 // ======================================= Concrete algebraic ====================================== //
 // Increment time
-template<size_t ind, size_t N>
+template<size_t N, size_t ind>
 class Incrementor : public Algebraic<N>
 {
 public:
@@ -197,7 +197,7 @@ public:
 };
 
 // Decrement time
-template<size_t ind, size_t N>
+template<size_t N, size_t ind>
 class Decrementor : public Algebraic<N>
 {
 public:

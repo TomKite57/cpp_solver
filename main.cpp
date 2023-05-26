@@ -17,7 +17,6 @@
 #include "solver.hpp"
 
 // TODO
-// - Make sure position of N template parameter is consistent
 // - Consistent naming for all template makers
 // - Consistent naming for all template classes (T at start)
 
@@ -66,7 +65,7 @@ void timing_tests()
     // Dynamic Stepper
     state = {1.0, 2.0, 3.0, 4.0, 0.0};
     DynamicSolver<N> solver;
-    solver.set_poststep( Incrementor<N-1, N>{});
+    solver.set_poststep( Incrementor<N, N-1>{});
     solver.set_ODE_step(stepper);
     // Time
     std::cout << std::setw(W) << "Dynamic Solver : " << timing_mean_std(BATCHES, REPEATS, solver, state, 0.1) << " seconds" << std::endl;
@@ -132,7 +131,7 @@ void bouncy_ball_test()
         );
 
     const auto ode_stepper = MakeTemplateRK4Stepper<N>(gravity);
-    const auto solver = MakeTemplateSolver(ode_stepper, Incrementor<t, N>{}, bouncer);
+    const auto solver = MakeTemplateSolver(ode_stepper, Incrementor<N, t>{}, bouncer);
 
     auto out_file = std::ofstream("bouncy_ball.dat");
     out_file << "t, y, ydot" << std::endl;

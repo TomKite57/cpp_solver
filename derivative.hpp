@@ -190,7 +190,7 @@ auto MakeCompositeDerivative(const Args&... args) -> TCompositeDerivative<N, Arg
 
 // ====================================== Concrete derivatives ===================================== //
 // SHM
-template<size_t x_ind, size_t dx_ind, size_t N>
+template<size_t N, size_t x_ind, size_t dx_ind>
 class CircularAcceleration : public Derivative<N>
 {
 public:
