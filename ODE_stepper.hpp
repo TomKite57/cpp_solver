@@ -158,4 +158,46 @@ auto MakeRK4Stepper(const T& dfunc) -> TRK4Stepper<N, T>
     return TRK4Stepper<N, T>(dfunc);
 }
 
+template <size_t N, typename D, typename T>
+class TRK4ExplicitTimeStepper : public ODEStepper<N>
+{
+private:
+    const D _derivative;
+    const T _time_evolution;
+
+public:
+    TRK4ExplicitTimeStepper(const D& derivative, const T& time_evolution) : _derivative{derivative}, _time_evolution{time_evolution} {}
+
+    void inline step(State<N>& state, const double& dt) const override
+    {
+        State<N> k1 = _derivative(state);
+        auto new_state = state + k1*dt/2.0;
+        _time_evolution(new_state, dt/2.0);
+
+        State<N> k2 = _derivative(new_state);
+        new_state = state + k2*dt/2.0;
+        _time_evolution(new_state, dt/2.0);
+
+        State<N> k3 = _derivative(new_state);
+        new_state = state + k3*dt;
+        _time_evolution(new_state, dt);
+
+        State<N> k4 = _derivative(new_state);
+
+        assert(state.size() == k1.size());
+        assert(state.size() == k2.size());
+        assert(state.size() == k3.size());
+        assert(state.size() == k4.size());
+
+        state += (k1 + 2.0*k2 + 2.0*k3 + k4)*dt/6.0;
+        _time_evolution(state, dt);
+    }
+};
+
+template <size_t N, typename D, typename T>
+auto MakeRK4ExplicitTimeStepper(const D& derivative, const T& time_evolution) -> TRK4ExplicitTimeStepper<N, D, T>
+{
+    return TRK4ExplicitTimeStepper<N, D, T>(derivative, time_evolution);
+}
+
 #endif // ODE_STEPPER_HPP

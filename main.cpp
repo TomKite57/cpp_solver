@@ -106,7 +106,7 @@ void bouncy_ball_test()
     State<N> state = {0.0, 10.0, 0.0};
 
     const auto bouncer = MakeWrappedAlgebraic<N>(
-            [=](State<N>& s, const double& dt) -> void
+            [=](State<N>& s, const double&) -> void
             {
                 if (s[y] < 0.0)
                 {
@@ -130,7 +130,7 @@ void bouncy_ball_test()
     const auto alg_stpper = MakeCompositeAlgebraic<N>(Incrementor<N, t>{}, ode_stepper, bouncer);
     const auto solver = MakePrePostSolver(ode_stepper, Incrementor<N, t>{}, bouncer);
 
-    auto out_file = std::ofstream("bouncy_ball.dat");
+    auto out_file = std::ofstream("data/bouncy_ball.dat");
     out_file << "t, y, ydot" << std::endl;
     for (size_t i = 0; i < steps; ++i)
     {
@@ -171,7 +171,7 @@ void forced_damped_oscillator_test()
     auto stepper = MakeRK4Stepper<N>(deriv);
     auto solver = MakeCompositeAlgebraic<N>(Incrementor<N, t>{}, stepper);
 
-    auto out_file = std::ofstream("forced_damped_oscillator.dat");
+    auto out_file = std::ofstream("data/forced_damped_oscillator.dat");
     for (size_t i = 0; i < steps; ++i)
     {
         solver(state, dt);
@@ -179,13 +179,74 @@ void forced_damped_oscillator_test()
     }
 }
 
+void heart_beat_test()
+{
+    // State
+    enum variable : size_t
+    {
+        t,
+        Qao,
+        Psa
+    };
+    constexpr size_t N = 3;
+
+    // Constants
+    const double T = 0.0125;    // Duration of heart beat (minutes)
+    const double TS = 0.0050;   // Duration of systole (minutes)
+    const double TMAX = 0.002;  // Time at which flow is max (minutes)
+    const double QMAX = 28.0;   // Max flow through aortic valve (liters/minute)
+    const double RS = 17.86;    // Resistance of systemic circulation (mmHg/(liter/minute))
+    const double CSA = 0.00175; // Capacitance of systemic arteries (liters/mmHg)
+
+    const double Ttotal = 10.0 * T;
+    const double dt = 0.01 * T;
+    const size_t steps = static_cast<size_t>(Ttotal / dt);
+
+    auto Qao_func = [=](const double &tin) -> double
+    {
+        const double t = tin - std::floor(tin / T) * T;
+        if (t < TMAX)
+            return QMAX * t / TMAX;
+        else if (t < TS)
+            return QMAX * (TS - t) / (TS - TMAX);
+        return 0.0;
+    };
+
+    auto setter = [=](State<N>& s, const double& _dt) -> void
+    {
+        s[t] += _dt;
+        s[Qao] = Qao_func(s[t]);
+    };
+
+    auto derivative = [=](const State<N> &s) -> State<N>
+    {
+        State<N> ds(0.0);
+        ds[Psa] = (Qao_func(s[t]) - s[Psa] / RS) / CSA;
+        return ds;
+    };
+
+    auto stepper = MakeRK4ExplicitTimeStepper<N>(derivative, setter);
+    auto solver = MakeCompositeAlgebraic<N>(stepper);
+
+    State<N> state = {0.0, 0.0, 80.0};
+    auto out_file = std::ofstream("data/explicit_heart_beat.dat");
+    for (size_t i = 0; i < steps; ++i)
+    {
+        solver(state, dt);
+        out_file << state << std::endl;
+    }
+    out_file.close();
+}
+
 int main()
 {
     //timing_tests();
 
-    //bouncy_ball_test();
+    bouncy_ball_test();
 
     forced_damped_oscillator_test();
+
+    heart_beat_test();
 
     return 0;
 }
