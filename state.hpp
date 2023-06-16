@@ -18,6 +18,22 @@ public:
     static constexpr size_t size() { return N; }
     static constexpr size_t _N = N;
 
+    bool has_inf() const
+    {
+        for (size_t i = 0; i < N; ++i)
+            if (std::isinf(_data[i]) || std::isinf(-_data[i]))
+                return true;
+        return false;
+    }
+
+    bool has_nan() const
+    {
+        for (size_t i = 0; i < N; ++i)
+            if (std::isnan(_data[i]) || std::isnan(-_data[i]))
+                return true;
+        return false;
+    }
+
     friend State<N> operator*(double scalar, const State<N>& state)
     {
         return state*scalar;

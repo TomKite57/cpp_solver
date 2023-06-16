@@ -28,7 +28,12 @@ public:
     Algebraic& operator=(Algebraic&& d) = default;
     virtual ~Algebraic() = default;
 
-    void operator()(State<N>& state, const double& dt) const { return call(state, dt); }
+    void operator()(State<N>& state, const double& dt) const {
+        call(state, dt);
+        // Check for any inf or nan
+        assert(!state.has_inf());
+        assert(!state.has_nan());
+    }
 
     virtual void call(State<N>& state, const double& dt) const = 0;
 };

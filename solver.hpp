@@ -29,6 +29,9 @@ public:
     void operator()(State<N>& state, const double& dt) const
     {
         step(state, dt);
+        // Check for any inf or nan
+        assert(!state.has_inf());
+        assert(!state.has_nan());
     }
     virtual void step(State<N>& state, const double& dt) const = 0;
 };

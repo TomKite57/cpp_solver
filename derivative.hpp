@@ -29,7 +29,15 @@ public:
     Derivative& operator=(Derivative&& d) = default;
     virtual ~Derivative() = default;
 
-    State<N> operator()(const State<N>& state) const { return call(state); }
+    State<N> operator()(const State<N>& state) const {
+        const auto temp = call(state);
+
+        // Check for any inf or nan
+        assert(!state.has_inf());
+        assert(!state.has_nan());
+
+        return temp;
+    }
 
     virtual State<N> call(const State<N>& state) const = 0;
 };

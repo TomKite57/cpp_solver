@@ -130,7 +130,7 @@ void bouncy_ball_test()
     const auto alg_stpper = MakeCompositeAlgebraic<N>(Incrementor<N, t>{}, ode_stepper, bouncer);
     const auto solver = MakePrePostSolver(ode_stepper, Incrementor<N, t>{}, bouncer);
 
-    auto out_file = std::ofstream("data/bouncy_ball.dat");
+    auto out_file = std::ofstream("data/bouncy_ball.csv");
     out_file << "t, y, ydot" << std::endl;
     for (size_t i = 0; i < steps; ++i)
     {
@@ -171,7 +171,7 @@ void forced_damped_oscillator_test()
     auto stepper = MakeRK4Stepper<N>(deriv);
     auto solver = MakeCompositeAlgebraic<N>(Incrementor<N, t>{}, stepper);
 
-    auto out_file = std::ofstream("data/forced_damped_oscillator.dat");
+    auto out_file = std::ofstream("data/forced_damped_oscillator.csv");
     for (size_t i = 0; i < steps; ++i)
     {
         solver(state, dt);
@@ -229,7 +229,7 @@ void heart_beat_test()
     auto solver = MakeCompositeAlgebraic<N>(stepper);
 
     State<N> state = {0.0, 0.0, 80.0};
-    auto out_file = std::ofstream("data/explicit_heart_beat.dat");
+    auto out_file = std::ofstream("data/explicit_heart_beat.csv");
     for (size_t i = 0; i < steps; ++i)
     {
         solver(state, dt);
@@ -238,15 +238,96 @@ void heart_beat_test()
     out_file.close();
 }
 
+void heart_beat_two()
+{
+    // State
+    enum variable : size_t
+    {
+        t,      // Set
+        PLV,    // Solved
+        Psa,    // Solved
+        QMi,    // Set
+        QAo,    // Set
+        Qs,     // Set
+        SMi,    // Set
+        SAo     // Set
+    };
+    constexpr size_t N = SAo + 1;
+
+    // Constants
+    const double T = 0.0125;        // Duration of heart beat (minutes)
+    const double TS = 0.0050;       // Duration of systole (minutes)
+    const double RS = 17.86;        // Resistance of systemic circulation (mmHg/(liter/minute))
+    const double CSA = 0.00175;     // Capacitance of systemic arteries (liters/mmHg)
+    const double PLA = 5.0;         // Left atrial pressure (mmHg)
+    const double RMi = 0.01;        // Mitral valve resistance (mmHg/(liter/minute))
+    const double RAO = 0.01;        // Aortic valve resistance (mmHg/(liter/minute))
+    const double CLVS = 0.00003;    // Compliance of left ventricle in systole (liters/mmHg)
+    const double CLVD = 0.0146;     // Compliance of left ventricle in diastole (liters/mmHg)
+    const double TAU_S = 0.0025;    // Time constant for ventricle pressure decay during systole (minutes)
+    const double TAU_D = 0.0075;    // Time constant for ventricle pressure decay during diastole (minutes)
+
+    // Run params
+    const double Ttotal = 15.0 * T;
+    const double dt = 0.01 * T;
+    const size_t steps = static_cast<size_t>(Ttotal / dt);
+
+    auto CLV_func = [=](const double &tin) -> double
+    {
+        const double t = tin - std::floor(tin / T) * T;
+        if (t < TS)
+            return CLVD * pow(CLVS/CLVD, (1.0-exp(-t/TAU_S)) / (1.0-exp(-TS/TAU_S)) );
+        return CLVS * pow(CLVD/CLVS, (1.0-exp(-(t-TS)/TAU_D)) / (1.0-exp(-(T-TS)/TAU_D)) );
+    };
+
+    auto dCLV_dt = [=](const double& tin) -> double
+    {
+        const double t = tin - std::floor(tin / T) * T;
+        if (t < TS)
+            return (CLVD * pow(CLVS / CLVD, (1.0 - exp(-t / TAU_S)) * (1.0 + 1.0 / (-1.0 + pow(exp(1.0), TS / TAU_S)))) * log(CLVS / CLVD)) / (exp(t / TAU_S) * (TAU_S - TAU_S / pow(exp(1.0), TS / TAU_S)));
+        return (pow(CLVD / CLVS, (1.0 - exp((-t + TS) / TAU_D)) / (1.0 - exp((-T + TS) / TAU_D))) * CLVS * exp((-t + TS) / TAU_D) * log(CLVD / CLVS)) / (TAU_D - exp((-T + TS) / TAU_D) * TAU_D);
+    };
+
+    auto derivative = [=](const State<N> &s) -> State<N>
+    {
+        State<N> ds(0.0);
+        const double SMi = static_cast<double>(PLA <= s[PLV]);
+        const double SAo = static_cast<double>(s[PLV] <= s[Psa]);
+        const double CLV = CLV_func(s[t]);
+   
+        ds[t]   = 1.0;
+        ds[PLV] = (s[SMi] * (s[PLA] - s[PLV]) / RMi - s[SAo] * (s[PLV] - s[Psa]) / RAO) / CLV;
+        ds[Psa] = (s[SAo] * (s[PLV] - s[Psa]) / RAO - s[Psa] / RS) / CSA;
+        return ds;
+    };
+
+    auto stepper = MakeRK4Stepper<N>(derivative);
+
+    State<N> state = {0.0, 5.0, 80.0, 5.0, 5.0, 5.0, 0.0, 0.0};
+    print(state);
+
+    auto out_file = std::ofstream("data/heart_beat_two.csv");
+    out_file << "# t, PLV, Psa, QMi, QAo, Qs, SMi, SAo" << std::endl;
+    for (size_t i = 0; i < steps; ++i)
+    {
+        stepper(state, dt);
+        out_file << state << std::endl;
+        std::cout << state << std::endl;
+    }
+    out_file.close();
+}
+
 int main()
 {
     //timing_tests();
 
-    bouncy_ball_test();
+    //bouncy_ball_test();
 
-    forced_damped_oscillator_test();
+    //forced_damped_oscillator_test();
 
-    heart_beat_test();
+    //heart_beat_test();
+
+    heart_beat_two();
 
     return 0;
 }
